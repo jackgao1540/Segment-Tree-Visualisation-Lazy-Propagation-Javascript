@@ -1,0 +1,91 @@
+//actual code
+var max_size = 5001;
+var n, arr = [], tree = [], lazy = [];
+
+function constructST(l, r, pos){
+  if(l > r)return 0;
+  if(l == r){
+    tree[pos] = arr[l];
+    return arr[l];
+  }
+  var mid = (l + r)/2;
+  tree[pos] = constructST(l, mid, pos * 2 + 1) + constructST(mid + 1, r, pos * 2 + 2);
+  return tree[pos];
+}
+
+function getSum(pos, nodeL, nodeR, l, r){
+  //check for lazy updates
+  if(lazy[pos] != 0){
+    tree[pos] += (nodeR - nodeL + 1) * lazy[pos];
+    if(nodeL != nodeR){
+      lazy[2 * pos + 1] += lazy[pos];
+      lazy[2 * pos + 2] += lazy[pos];
+    }
+    lazy[pos] = 0;
+  }
+  if(l > r || nodeL > r || nodeR < l)return 0;
+  if(nodeL >= l && nodeR <= r){
+    //completely inside range 
+    return tree[pos];
+  }
+  var mid = (nodeL + nodeR)/2;
+  return getSum(2 * pos + 1, nodeL, mid, l, r) + getSum(2 * pos + 2, mid + 1, nodeR, l, r);
+}
+
+function updateRange(pos, nodeL, nodeR, l, r, diff){
+  //lazy propogation
+  if(lazy[pos] != 0){
+    tree[pos] += (nodeR - nodeL + 1) * lazy[pos];
+    if(nodeL != nodeR){
+      lazy[2 * pos + 1] += lazy[pos];
+      lazy[2 * pos + 2] += lazy[pos];
+    }
+    lazy[pos] = 0;
+  }
+  if(l > r || nodeL > r || nodeR < l)return;
+  if(nodeL >= l && nodeR <= r){
+    tree[pos] += (nodeR - nodeL + 1) * diff;
+    if(nodeL != nodeR){
+      lazy[2 * pos + 1] += diff;
+      lazy[2 * pos + 2] += diff;
+    }
+    return;
+  }
+  //not completely contained
+  var mid = (nodeL + nodeR)/2;
+  updateRange(2 * pos + 1, nodeL, mid, l, r, diff);
+  updateRange(2 * pos + 2, mid + 1, nodeR, l, r, diff);
+  tree[pos] = tree[2 * pos + 1] + tree[2 * pos + 2];
+  return;
+}
+
+//main program
+
+cin >> n;
+for(int i = 0; i < n; i++)cin >> arr[i];
+memset(tree, INT_MIN, sizeof(tree));
+memset(lazy, 0, sizeof(lazy));
+cout << endl << "Sum of all elements of the set: " << constructST(0, n - 1, 0) << endl;
+cout << endl << "ORIGINAL Segment Tree: " << endl;
+int tree_size = (int)(pow(2, (int)(ceil(log2(n))) + 1)) - 1;
+for(int i = 0; i < tree_size; i++)cout << tree[i] << ' ';
+cout << endl << endl;
+//get queries
+cout << "Please enter your queries; ('Q', l, r) for sum query and ('U', val, l, r)  for range update ('X' to quit" << endl << endl;
+while(true){
+  char c;
+  cin >> c;
+  if(c == 'X')break;
+  if(c == 'Q'){
+    int l, r;
+    cin >> l >> r;
+    l--; r--;
+    cout << endl << "Sum from " << l + 1 << " to " << r + 1 << ": " << getSum(0, 0, n - 1, l, r) << endl << endl;
+  }else{
+    var l, r, val;
+    //get these values
+    l--;
+    r--;
+    updateRange(0, 0, n - 1, l, r, val);
+  }
+}
